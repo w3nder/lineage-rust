@@ -5,6 +5,9 @@ network protocol (C4, protocol 656) and the in-game interface. It runs natively 
 browser (WebAssembly + WebGPU) and on mobile (iOS, Android), and ships with a companion bot
 (Tauri + React).
 
+**Play it in your browser: [play.unkbot.com](https://play.unkbot.com)** (Chrome or Edge with WebGPU). No install needed;
+the demo connects to the L2Killer server, so you log in with an L2Killer account.
+
 The repository **contains no game files and needs none of the original DLLs**. It reads the data of
 a C4 client you already own: maps, meshes, textures, animations, `.dat` tables, `.ini`/`.int` files
 and UnrealScript `.u` packages.
@@ -101,6 +104,8 @@ inventory, skills, unhandled or malformed packets).
 - `F12` saves a screenshot to `~/Pictures/killer/`.
 
 ## Web (WebAssembly + WebGPU)
+
+A hosted build of this client runs at [play.unkbot.com](https://play.unkbot.com). To run your own:
 
 ```sh
 rustup target add wasm32-unknown-unknown
