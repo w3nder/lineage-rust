@@ -23,6 +23,17 @@ and UnrealScript `.u` packages.
 | Status | Work in progress: login, lobby, world, movement, combat, and most C4 windows work; not everything is ported |
 | License | MIT (vendored UE2 readers: Canastra Source License 1.0) |
 
+## Screenshots
+
+Captured from the web build running in Chrome at [play.unkbot.com](https://play.unkbot.com).
+
+![Town with other players, effects and the classic C4 interface](screenshots/crowd.jpg)
+
+| | |
+|---|---|
+| ![Login lobby](screenshots/lobby.jpg) | ![Character selection](screenshots/character-select.jpg) |
+| ![Walking in town](screenshots/town.jpg) | ![Map and inventory windows](screenshots/windows.jpg) |
+
 ## Requirements
 
 - Rust **1.95** or newer (`rustup toolchain install 1.95.0`)
