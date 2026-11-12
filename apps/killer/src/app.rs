@@ -42,7 +42,7 @@ const PROTOCOL_QUIT_SYSMSG: u32 = 88;
 use killer_world::{
     ChatLine, ChatLog, NetCommand, NetEvent, NetHandle, SessionEvent, World, WorldEvent, spawn_choosing,
 };
-use l2_net::game::{SystemMessage, describe_server_opcode};
+use l2_net::game::SystemMessage;
 use std::collections::HashMap;
 use std::f32::consts::TAU;
 use std::path::{Path, PathBuf};
@@ -207,10 +207,6 @@ enum PendingPick {
     Drop(killer_world::Dialog),
 }
 
-fn confirm_sound(command: &NetCommand) -> Option<&'static str> {
-    matches!(command, NetCommand::DestroyItem { .. } | NetCommand::CrystallizeItem { .. }).then_some(killer_ui::interface_sound::TABLE[killer_ui::interface_sound::TRASH_BASKET])
-}
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct Hovered {
     object_id: i32,
@@ -235,15 +231,6 @@ fn item_label(hover: Hover<'_>, ui: &ui2d::GameUi, camera: &Camera, size: (f32,f
     let (location,text) = hover.items.label(hover.world,hover.tables?,hovered.object_id,hovered.spawned,slot)?;
     let screen = characters::project(camera,size,location)?;
     Some(ui2d::ItemLabel { screen,text })
-}
-
-fn bind_server_object(world: &World, mut selection: killer_assets::collision::world::Selection) -> killer_assets::collision::world::Selection {
-    if selection.target.is_none()
-        && let Some(object_id) = selection.server_id.and_then(|id| world.object_for_server_id(id))
-    {
-        selection.target = Some(killer_assets::collision::world::Target { object_id, spawned: 0, position: selection.hit.position, radius: 0.0, height: 0.0 });
-    }
-    selection
 }
 
 fn same_target(a: &killer_assets::collision::world::Target, b: &killer_assets::collision::world::Target) -> bool {
@@ -362,7 +349,6 @@ pub struct App {
     audio: Option<crate::ui_audio_host::AudioHost>,
 }
 
-pub const NPC_WINDOW_OPCODES: [u8; 6] = [0x10, 0x11, 0x41, 0x42, 0x8a, 0xd0];
 const USER_INI: &str = "user.ini";
 const SKY_TILE: &str = "sky";
 const L2_INI: &str = "l2.ini";
@@ -402,7 +388,6 @@ fn save_capture(path: &Path, size: (u32, u32), rgba: &[u8]) -> Result<(), Render
     write_png(path, size.0, size.1, rgba).map_err(|e| RenderError::Readback(e.to_string()))
 }
 
-const TELEPORT_RAISE: f32 = 10.0;
 const SPLASH_TIMEOUT: Duration = Duration::from_secs(120);
 
 fn coords(v: Vec3) -> [i32; 3] {
@@ -1066,7 +1051,7 @@ impl App {
                         && !deferred
                         && let Some(pawn) = self.world.entity_mut(t.target_id)
                     {
-                        pawn.position.z += pawn.collision_height + TELEPORT_RAISE;
+                        pawn.position.z += pawn.collision_height + input::TELEPORT_RAISE;
                     }
                     if let (WorldEvent::ShopPreviewInfo(info), Some(tables)) = (&event, &self.tables) {
                         self.world.apply_shop_preview_info(info, |id| u32::try_from(id).ok().and_then(|id| tables.armorgrp.get(&id)).map(|armor| armor.body_part));
@@ -1139,7 +1124,7 @@ impl App {
                 NetEvent::Session(SessionEvent::Unknown { opcode, size }) => {
                     log::debug!("opcode desconhecido {opcode:#04x} ({size} bytes)");
                     self.ignored.note(opcode);
-                    if let Some(notice) = npc_window_notice(opcode, size) {
+                    if let Some(notice) = input::npc_window_notice(opcode, size) {
                         log::info!("{}", notice.text);
                         self.chat.push(notice);
                     }
@@ -1334,7 +1319,7 @@ impl App {
 
     fn teleported(&mut self) {
         let Some(me) = &self.world.me else { return };
-        let server = me.position - Vec3::Z * (me.collision_height + TELEPORT_RAISE);
+        let server = me.position - Vec3::Z * (me.collision_height + input::TELEPORT_RAISE);
         log::info!("teleporte para {:.0} {:.0} {:.0}", server.x, server.y, server.z);
         self.send(NetCommand::Validate { position: coords(server), heading: me.heading });
         self.send(NetCommand::Appearing);
@@ -1408,7 +1393,7 @@ impl App {
         if ticket != self.hover_ticket { return; }
         self.hover_pending = false;
         let pieces = std::mem::take(&mut self.hover_pieces);
-        self.hovered = match selection.map(|selection| selection.map(|selection| bind_server_object(&self.world, selection))) {
+        self.hovered = match selection.map(|selection| selection.map(|selection| input::bind_server_object(&self.world, selection))) {
             Ok(selection) => selection.and_then(|selection| selection.target).map(|target| Hovered {
                 object_id:target.object_id,
                 spawned:target.spawned,
@@ -1426,7 +1411,7 @@ impl App {
         if ticket != self.pick_ticket { return; }
         let Some(pending) = self.pending_pick.take() else { return; };
         let hit = match selection {
-            Ok(Some(hit)) => bind_server_object(&self.world, hit),
+            Ok(Some(hit)) => input::bind_server_object(&self.world, hit),
             Ok(None) => return,
             Err(error) => { log::warn!("seleção no mundo: {error}"); return; }
         };
@@ -2707,7 +2692,7 @@ impl App {
             }
         }
         if let Some(command) = dialog_command(answer, accept) {
-            if let Some(name) = confirm_sound(&command) {
+            if let Some(name) = input::confirm_sound(&command) {
                 self.play_interface_sound(name);
             }
             self.send(command);
@@ -4110,14 +4095,6 @@ fn log_session_lists(event: &WorldEvent) {
     }
 }
 
-fn npc_window_notice(opcode: u8, size: usize) -> Option<ChatLine> {
-    if !NPC_WINDOW_OPCODES.contains(&opcode) {
-        return None;
-    }
-    let text = format!("o NPC respondeu com {} ({size} bytes): janela ainda não implementada", describe_server_opcode(opcode));
-    Some(ChatLine::new(CHAT_SYSTEM, String::new(), text))
-}
-
 pub fn egui_consumes(ctx: &egui::Context, event: &WindowEvent, reported: bool) -> bool {
     match event {
         WindowEvent::MouseInput { .. } | WindowEvent::MouseWheel { .. } => {
@@ -4876,9 +4853,9 @@ mod tests {
 
     #[test]
     fn confirming_a_destroy_or_crystallize_plays_trash_basket() {
-        assert_eq!(confirm_sound(&NetCommand::DestroyItem { object_id: 1, count: 1 }), Some("itemsound.trash_basket"));
-        assert_eq!(confirm_sound(&NetCommand::CrystallizeItem { object_id: 1, count: 1 }), Some("itemsound.trash_basket"));
-        assert_eq!(confirm_sound(&NetCommand::TargetCancel), None);
+        assert_eq!(input::confirm_sound(&NetCommand::DestroyItem { object_id: 1, count: 1 }), Some("itemsound.trash_basket"));
+        assert_eq!(input::confirm_sound(&NetCommand::CrystallizeItem { object_id: 1, count: 1 }), Some("itemsound.trash_basket"));
+        assert_eq!(input::confirm_sound(&NetCommand::TargetCancel), None);
     }
 
     #[test]
@@ -4906,13 +4883,13 @@ mod tests {
 
     #[test]
     fn an_ignored_npc_answer_becomes_a_system_line_so_the_click_is_not_silent() {
-        let notice = npc_window_notice(0x11, 779).unwrap();
+        let notice = input::npc_window_notice(0x11, 779).unwrap();
         assert_eq!(notice.kind, CHAT_SYSTEM);
         assert_eq!(notice.text, "o NPC respondeu com BuyList (0x11) (779 bytes): janela ainda não implementada");
-        assert!(npc_window_notice(0x10, 5).unwrap().text.starts_with("o NPC respondeu com SellList (0x10)"));
-        assert!(npc_window_notice(0xd0, 5).unwrap().text.contains("MultiSellList"));
-        assert_eq!(npc_window_notice(0x2c, 5), None);
-        assert_eq!(npc_window_notice(0xf3, 21), None);
+        assert!(input::npc_window_notice(0x10, 5).unwrap().text.starts_with("o NPC respondeu com SellList (0x10)"));
+        assert!(input::npc_window_notice(0xd0, 5).unwrap().text.contains("MultiSellList"));
+        assert_eq!(input::npc_window_notice(0x2c, 5), None);
+        assert_eq!(input::npc_window_notice(0xf3, 21), None);
     }
 
     #[test]

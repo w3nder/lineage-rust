@@ -30,6 +30,7 @@ pub enum LoginUpdate {
     Send(Vec<u8>),
     Notice(l2_net::login::LoginNotice),
     Servers(Vec<GameServer>),
+    Card { card_id: i32, position: i8, retry: bool },
     Authorized(Authorization),
 }
 
@@ -69,7 +70,7 @@ impl Login {
                 }
                 LoginStep::Notice(notice) => updates.push(LoginUpdate::Notice(notice)),
                 LoginStep::Choose(servers) => {self.servers=servers.clone();updates.push(LoginUpdate::Servers(servers));}
-                LoginStep::CardCheck { .. } => return Err("cartão de segurança: o navegador ainda não tem a janela de cartão".to_string()),
+                LoginStep::CardCheck { card_id, position, retry } => updates.push(LoginUpdate::Card { card_id, position, retry }),
                 LoginStep::Done(auth) => updates.push(LoginUpdate::Authorized(auth)),
             }
         }
@@ -78,6 +79,11 @@ impl Login {
 
     pub fn accept_notice(&mut self) -> Result<Vec<u8>,String> {
         let body=self.flow.accept_notice().map_err(|e|e.to_string())?;
+        Ok(l2_net::transport::frame::encode(&self.cipher.seal(&body)))
+    }
+
+    pub fn card_answer(&mut self, card_id: i32, value: i32) -> Result<Vec<u8>,String> {
+        let body=self.flow.card_answer(card_id,value).map_err(|e|e.to_string())?;
         Ok(l2_net::transport::frame::encode(&self.cipher.seal(&body)))
     }
 

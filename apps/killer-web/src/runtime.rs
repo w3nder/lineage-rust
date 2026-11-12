@@ -78,6 +78,9 @@ pub struct Runtime {
     console_mark: crate::ui_olympiad::ConsoleMark,
     pub online: bool,
     pub disconnect_accepted: bool,
+    pub leave_requested: bool,
+    pub exit_requested: bool,
+    pub keyboard_moving: bool,
     pub cursor: Option<(f32,f32)>,
     pub hovered: Option<(i32,u64)>,
     pub loading_profile: [f64;4],
@@ -130,7 +133,7 @@ impl Runtime {
         let music_times=client.read_system_text("alaudio.int").map(|text|{let ini=killer_ui::ini::parse_ini(&text);crate::zone_music::MusicTimes::read(|section,key|ini.get(section,key).map(str::to_owned))}).unwrap_or_default();
         if let Err(error)=shared.collision.tile(&mut client,&killer_assets::tiles::tile_name(anchor.x,anchor.y),&level) {log::warn!("colisão do tile: {error}");}
         Ok(Self { client,audio,audio_frame:None,audio_time:0.0,world,ui,orbit,ground,trace,tables,cache:{let mut cache=CharacterCache::default();cache.set_sound_config(sound_config);cache},items:Default::default(),fences:Default::default(),sound_bank:Default::default(),shakes:Default::default(),fade:Default::default(),fade_shown:false,effects:Default::default(),abnormal:Default::default(),shared,walk_warned:Default::default(),walk_state:Default::default(),marks:Default::default(),level,zones,neighbours,moving_trace:Default::default(),options,video:None,labels:Vec::new(),lights,display,
-            bank:TextureBank::new(),radar_toggle:false,binds,modern,context:egui::Context::default(),painter:egui_wgpu::Renderer::new(renderer.device(),format,Default::default()),chat:Vec::new(),crest_inbox:Default::default(),scale,tile:killer_assets::tiles::tile_name(anchor.x,anchor.y),online:spawn.is_some(),disconnect_accepted:false,cursor:None,hovered:None,loading_profile:[setup_ms,ground_ms-setup_ms,trace_ms-ground_ms,started.elapsed().as_secs_f64()*1000.0-trace_ms],profile:[0.0;4],profile_frames:0,banks_age:0.0,zone_music:Default::default(),music_zone:None,music_times,fishing_host:Default::default(),fishing_target:None,appendix:Default::default(),windows_age:0.0,windows_saved:None,console_mark:Default::default() })
+            bank:TextureBank::new(),radar_toggle:false,binds,modern,context:egui::Context::default(),painter:egui_wgpu::Renderer::new(renderer.device(),format,Default::default()),chat:Vec::new(),crest_inbox:Default::default(),scale,tile:killer_assets::tiles::tile_name(anchor.x,anchor.y),online:spawn.is_some(),disconnect_accepted:false,leave_requested:false,exit_requested:false,keyboard_moving:false,cursor:None,hovered:None,loading_profile:[setup_ms,ground_ms-setup_ms,trace_ms-ground_ms,started.elapsed().as_secs_f64()*1000.0-trace_ms],profile:[0.0;4],profile_frames:0,banks_age:0.0,zone_music:Default::default(),music_zone:None,music_times,fishing_host:Default::default(),fishing_target:None,appendix:Default::default(),windows_age:0.0,windows_saved:None,console_mark:Default::default() })
     }
 
     pub fn ground_diagnostic(&self) -> Option<serde_json::Value> {
@@ -152,6 +155,15 @@ impl Runtime {
     pub fn apply(&mut self,event: &killer_world::session::SessionEvent,renderer: &mut Renderer) -> Result<(),String> {
         let entering=self.world.me.is_none() && matches!(event,killer_world::session::SessionEvent::UserInfo(_));
         self.world.apply(event);
+        if let killer_world::session::SessionEvent::World(killer_world::WorldEvent::TeleportToLocation(teleport))=event
+            && !self.world.teleport_announce
+            && let Some(pawn)=self.world.entity_mut(teleport.target_id) {
+            pawn.position.z+=pawn.collision_height+crate::input::TELEPORT_RAISE;
+        }
+        if let killer_world::session::SessionEvent::Unknown {opcode,size}=event
+            && let Some(notice)=crate::input::npc_window_notice(*opcode,*size) {
+            self.push_chat(ui2d::chat_entry(&notice));
+        }
         if let killer_world::session::SessionEvent::World(killer_world::WorldEvent::ShopPreviewInfo(info))=event {
             self.world.apply_shop_preview_info(info,|id|u32::try_from(id).ok().and_then(|id|self.tables.armorgrp.get(&id)).map(|armor|armor.body_part));
         }
@@ -240,6 +252,11 @@ impl Runtime {
             if let Some(name)=sound {self.interface_sound(&name);}
             if self.chat.len()>killer_world::chat::CHAT_HISTORY {self.chat.remove(0);}
         }
+        self.follow_tile(renderer,entering)?;
+        Ok(())
+    }
+
+    fn follow_tile(&mut self,renderer: &mut Renderer,entering: bool) -> Result<(),String> {
         if let Some((position,heading))=self.world.me.as_ref().map(|me|(me.position,me.heading)) {
             let tile=killer_assets::tiles::tile_name(position.x,position.y);
             if !killer_assets::tiles::TileId::parse(&tile).is_some_and(|id|self.neighbours.is_loaded(id)) {
@@ -290,6 +307,16 @@ impl Runtime {
         Ok(())
     }
 
+    pub fn teleported(&mut self) {
+        let Some(me)=&self.world.me else {return;};
+        let server=me.position-Vec3::Z*(me.collision_height+crate::input::TELEPORT_RAISE);
+        let (object_id,heading)=(me.object_id,me.heading);
+        self.ui.keys.send(killer_world::NetCommand::Validate {position:server.to_array().map(|v|v as i32),heading});
+        self.ui.keys.send(killer_world::NetCommand::Appearing);
+        self.zone_music.reset();
+        self.walk_state.forget(object_id);
+    }
+
     fn interface_sound(&mut self,name: &str) {
         if self.audio.available() && self.audio_frame.is_some() && !name.is_empty() && name!="NAME_None"
             && let Some((format,encoded))=self.client.sound(name) {
@@ -331,6 +358,17 @@ impl Runtime {
         for command in commands {
             killer_world::engine_input::exec_radar(&mut self.world.windows.radar,&command,has_pawn);
             self.orbit.exec_input(&command,action,delta);
+            let pawn=self.world.me.as_ref().map(|me|(me.heading,0));
+            let fired=match self.orbit.exec_pawn_camera(&command,action,0.0,pawn,self.world.camera_fixed) {
+                crate::camera::PawnCameraExec::FixedView=>Some(killer_ui::tutorial::EVENT_DEFAULT_CAMERA),
+                crate::camera::PawnCameraExec::TurnBack=>Some(killer_ui::tutorial::EVENT_TURN_BACK),
+                crate::camera::PawnCameraExec::Ignored=>None,
+            };
+            if let Some(event)=fired && let Some(command)=self.ui.tutorial.fire(event) {self.ui.keys.send(command);}
+            let mut cmd=command.as_str();
+            if killer_world::engine_input::parse_command(&mut cmd,"CAMERAMODESELECTINGCANCEL") && self.world.camera_fixed {
+                self.world.pending_click_target=None;
+            }
         }
     }
 
@@ -386,7 +424,15 @@ impl Runtime {
             ui2d::KeyAction::Bypass(command)=>Some(NetCommand::Bypass {command}),
             ui2d::KeyAction::LinkHtml(link)=>Some(NetCommand::LinkHtml {link}),
             ui2d::KeyAction::Dialog(ui2d::DialogAnswer::Disconnected,accept)=>{self.disconnect_accepted|=accept;None}
-            ui2d::KeyAction::Dialog(answer,accept)=>ui2d::dialog_command(answer,accept),
+            ui2d::KeyAction::Dialog(answer,accept)=>{
+                if let ui2d::DialogAnswer::SystemMenu {restart}=answer && accept {
+                    if !restart {self.leave_requested=true;return;}
+                    self.ui.system_menu_restart();
+                }
+                let command=ui2d::dialog_command(answer,accept);
+                if let Some(name)=command.as_ref().and_then(crate::input::confirm_sound) {self.interface_sound(name);}
+                command
+            }
             ui2d::KeyAction::RestartPoint(point)=>Some(NetCommand::RestartPoint {point}),
             ui2d::KeyAction::Select(object_id)=>crate::input::target_action(&mut self.world,object_id,self.ui.keys.ctrl,self.ui.keys.shift),
             ui2d::KeyAction::Assist(member)=>{
@@ -405,15 +451,22 @@ impl Runtime {
             self.action(ui2d::KeyAction::Select(id));
             return Ok(());
         }
+        let (ctrl,shift)=(self.ui.keys.ctrl,self.ui.keys.shift);
         let Some(hit)=self.pick(camera,pixel,renderer)? else {return Ok(());};
         if self.options.l2_mark==2 {
             let life=self.mark_life(crate::landmark::MARK_CLASS);
             self.marks.state.add(hit.hit.position,hit.hit.normal,hit.surface,life,crate::landmark::sine());
         }
         if let Some(target)=hit.target {
-            self.action(ui2d::KeyAction::Select(target.object_id));
-            self.marks.state.delete(false);
-        } else if let Some(me)=self.world.me.as_mut() {
+            if (self.world.entity(target.object_id).is_some_and(|entity|entity.spawned==target.spawned) || self.world.static_target(target.object_id).is_some())
+                && let Some(command)=crate::input::target_action(&mut self.world,target.object_id,ctrl,shift) {
+                self.ui.keys.send(command);
+                self.marks.state.delete(false);
+            }
+            return Ok(());
+        }
+        if !crate::input::ground_click_allowed(&self.world,self.keyboard_moving,shift) {return Ok(());}
+        if let Some(me)=self.world.me.as_mut() {
             let target=hit.hit.position.to_array().map(|v|v as i32);
             let command=killer_world::NetCommand::MoveTo {target,origin:me.position.to_array().map(|v|v as i32)};
             me.dest=Some(Vec3::new(target[0] as f32,target[1] as f32,target[2] as f32));
@@ -429,13 +482,20 @@ impl Runtime {
         let view=crate::items::GeometryView {neighbours:&self.neighbours,lighting:&self.lights,bsp_tree:&self.level.bsp_tree,zones:self.zones};
         let views=crate::items::views(&view,Some(renderer),origin);
         let targets=self.items.targets(&self.world);
-        let query=killer_assets::pickup::TraceQuery {start:origin,end:origin+direction*10000.0,extent:Vec3::splat(0.1),flags:0x200bf};
+        let query=crate::input::pick_query(origin,direction,self.ui.keys.shift);
         let spawned=self.fences.colliders(&self.world);
-        killer_assets::collision::world::trace_targets(&mut self.client,&mut self.shared.collision,&views,query,&targets,&spawned)
+        let selection=killer_assets::collision::world::trace_targets(&mut self.client,&mut self.shared.collision,&views,query,&targets,&spawned)?;
+        Ok(selection.map(|selection|crate::input::bind_server_object(&self.world,selection)))
     }
 
     pub fn release(&mut self) {
-        let clicked=self.ui.mouse_up_in(&self.world).and_then(|action|ui2d::html_action(&action));
+        let clicked=self.ui.mouse_up_in(&self.world).and_then(|action|{
+            if killer_ui::html::split_message(&action).0.is_some() {
+                self.ui.html_confirm(Some(&self.tables),&action,Instant::now());
+                return None;
+            }
+            ui2d::html_action(&action)
+        });
         if let Some(text)=self.ui.chat_filter_released()
             && let Err(error)=self.client.write_system_text("chatfilter.ini",&text) {
             self.push_chat(ChatEntry::new(-1,"",format!("Não foi possível salvar o filtro: {error}")));
@@ -443,6 +503,7 @@ impl Runtime {
         let menu=self.ui.menu_released(&self.world);
         let warning=self.ui.warning_released();
         let dialog=self.ui.dialog_released();
+        if std::mem::take(&mut self.ui.warning_exit) {self.exit_requested=true;}
         let views=ui2d::world_views(&self.world,Some(&self.tables),Instant::now());
         let pet=self.ui.pet_released(&views);
         let restart=self.ui.restart_released(&views);
@@ -572,6 +633,8 @@ impl Runtime {
         self.moving_trace.sync(renderer);
         let before=self.walk_state.snapshot(&self.world);
         self.world.pawn_clipping=self.display.pawn_clipping;
+        self.world.keep_min_frame_rate=self.options.keep_min_frame_rate;
+        self.world.teleport_fades=true;
         let held=self.binds.hold(dt);
         self.exec_engine_commands(held,killer_world::engine_input::InputAction::Hold,dt);
         self.world.tick(dt);
@@ -592,12 +655,14 @@ impl Runtime {
         }
         if let Some(action)=self.ui.tick_dialog(&mut self.world,Some(&self.tables),Instant::now()) {self.action(action);}
         self.ui.tick_tutorial(Instant::now());
+        self.ui.tick_edit_boxes(Instant::now());
         self.ui.tick_command_channel(Instant::now());
         self.ui.tick_zone_title(Instant::now());
         if let Some(me) = self.world.me.as_mut() {
             self.orbit.follow(me.position);
         }
         self.orbit.player_tick(dt);
+        self.orbit.settings.auto_tracking=self.ui.options.auto_tracking_pawn;
         self.orbit.camera_commands(&mut self.world,dt);
         let origin=self.world.me.as_ref().map_or(Vec3::ZERO,|me|me.position);
         let camera_views={
@@ -654,8 +719,12 @@ impl Runtime {
         for op in std::mem::take(&mut self.ui.keys.broadcast.canvas_ops).into_iter().chain(std::mem::take(&mut self.ui.keys.olympiad.canvas_ops)) {self.world.appendix.canvas_apply(op);}
         for op in std::mem::take(&mut self.ui.keys.broadcast.marks) {self.world.apply_appendix(op);}
         if let Some(done)=self.fade.update(dt) && done.id==killer_world::observer::TELEPORT_FADE_ID {
-            if self.world.observer_fade_done() && let Some(me)=self.world.me.as_mut() {
-                self.neighbours.ground_at(me.position,&self.ground).place(me);
+            if self.world.observer_fade_done() {
+                if std::mem::take(&mut self.world.teleport_announce) {
+                    if let Some(me)=self.world.me.as_mut() {self.neighbours.ground_at(me.position,&self.ground).place(me);}
+                    self.teleported();
+                }
+                if let Err(error)=self.follow_tile(renderer,false) {log::error!("tile do teleporte: {error}");}
             }
             self.fade.fade_in(killer_world::observer::FADE_MS,0);
         }
@@ -684,7 +753,8 @@ impl Runtime {
         self.profile[0]+=started.elapsed().as_secs_f64()*1000.0;
         let started=Instant::now();
         let frame = Frame { display:self.display,viewer:self.world.me.as_ref().map_or(camera.eye,|me|me.position),dt };
-        let drawn=characters::drawn_pawns(&self.world,&self.tables,&frame).into_iter().collect();
+        let drawn: std::collections::HashSet<i32>=characters::drawn_pawns(&self.world,&self.tables,&frame).into_iter().collect();
+        self.world.rendered.clone_from(&drawn);
         for character in self.cache.evict_drawn(&self.world,&drawn) {renderer.remove_character(character);}
         let frustum=camera.frustum(self.ui.desktop.size.0 as f32/self.ui.desktop.size.1.max(1) as f32);
         let zone = |position: Vec3| self.neighbours.zone_at(position).unwrap_or_else(||{
@@ -692,6 +762,10 @@ impl Runtime {
             if usize::from(zone)<self.zones {zone} else {0}
         });
         let mut instances = characters::instances_drawn(&mut self.world,&mut self.cache,&self.tables,&frame,zone,|query|self.neighbours.tile_at(query.position).map_or(&self.lights,|tile|&tile.lighting).sample(query,0,0.0),|center,radius|frustum.contains_sphere(center,radius),|_|None,&drawn);
+        if (self.orbit.default_move.hide_player || self.world.observer.hides_player())
+            && let Some(me)=self.world.me.as_ref().map(|me|me.object_id) {
+            instances.retain(|instance|instance.actor_id!=me);
+        }
         self.appendix.sync(&mut self.cache,&mut self.world,&mut self.client);
         self.profile[1]+=started.elapsed().as_secs_f64()*1000.0;
         let started=Instant::now();
@@ -725,6 +799,9 @@ impl Runtime {
         instances.extend(self.effects.arrow_instances(&view));
         for request in self.items.take_sounds() {
             if let Err(error)=self.audio.pickup(request.actor,&request.sound.encoded,request.position,request.volume,self.audio_frame) {log::warn!("som do item {}: {error}",request.sound.name);}
+        }
+        for sound in self.world.effects.take_enter_sounds() {
+            self.cache.push_sound_plan(crate::world_sound::SoundPlan {actor:sound.object_id,name:sound.name,position:Vec3::from(sound.position),volume:sound.volume*crate::world_sound::VOLUME_SCALE,radius:sound.radius,skip_if_playing:false});
         }
         for plan in self.cache.take_sound_plans() {
             let Some(sound)=self.sound_bank.resolve(&mut self.client,&plan) else {continue;};
@@ -760,6 +837,7 @@ impl Runtime {
         self.effects.sync(renderer,&mut self.cache,&mut self.client,&self.world,&self.options);
         self.effects.fly(renderer,&mut self.cache,&self.world,dt);
         self.effects.firecrackers(renderer,&mut self.cache,&mut self.client,&mut self.world,&self.options,dt);
+        self.effects.enter_events(renderer,&mut self.client,&mut self.world,&self.options);
         let arrow_option=self.ui.keys.option.checked(crate::quest_arrow::ARROW_CHECK);
         let zone=self.world.me.as_ref().map_or(0,|me|self.neighbours.zone_at(me.position).unwrap_or_else(||{let zone=self.level.bsp_tree.zone_at(me.position.to_array());if usize::from(zone)<self.zones {zone}else{0}}));
         self.effects.quest_arrow(renderer,&mut self.cache,&mut self.client,&mut self.world,&self.options,arrow_option,zone);
@@ -769,6 +847,13 @@ impl Runtime {
         self.modern.sync(&mut self.ui);
         self.sync_video_page();
         self.ui.sync_windows(&self.world,Some(&self.tables),Instant::now());
+        for cell in self.ui.take_zone_texture_requests() {
+            let texture=self.client.catalog().texture_raw(&killer_ui::zone_title::zone_texture_name(cell)).and_then(|raw|{
+                let mip=raw.mips.into_iter().next()?;
+                Some(killer_ui::zone_title::ZoneTexture {width:mip.width as i32,height:mip.height as i32,pixels:mip.data})
+            });
+            self.ui.set_zone_texture(cell,texture);
+        }
         let (hovered,item_label)=self.hover_feedback(&camera,renderer);
         let mut views = ui2d::world_views(&self.world,Some(&self.tables),Instant::now());
         views.item_label=item_label;
@@ -796,6 +881,7 @@ impl Runtime {
         } else if self.fishing_target.take().is_some() {
             renderer.clear_ui_external_texture(killer_ui::fishing::VIEWPORT_TEXTURE);
         }
+        self.ui.desktop.raise_newly_shown();
         let list = self.ui.frame(&self.world,&self.labels,&self.chat,target.as_ref(),&views);
         renderer.set_ui_size(Some((self.ui.desktop.size.0 as u32,self.ui.desktop.size.1 as u32)));
         renderer.set_ui(&list,&mut BankSource {bank:&mut self.bank,catalog:self.client.catalog()});

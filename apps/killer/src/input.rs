@@ -89,6 +89,31 @@ pub fn ground_click_allowed(world: &World, keyboard_moving: bool, shift: bool) -
     !shift && !me.dead && !world.camera_fixed && !keyboard_moving && me.wait_type() == WaitType::Stand
 }
 
+pub const TELEPORT_RAISE: f32 = 10.0;
+
+pub const NPC_WINDOW_OPCODES: [u8; 6] = [0x10, 0x11, 0x41, 0x42, 0x8a, 0xd0];
+
+pub fn confirm_sound(command: &NetCommand) -> Option<&'static str> {
+    matches!(command, NetCommand::DestroyItem { .. } | NetCommand::CrystallizeItem { .. }).then_some(killer_ui::interface_sound::TABLE[killer_ui::interface_sound::TRASH_BASKET])
+}
+
+pub fn bind_server_object(world: &World, mut selection: killer_assets::collision::world::Selection) -> killer_assets::collision::world::Selection {
+    if selection.target.is_none()
+        && let Some(object_id) = selection.server_id.and_then(|id| world.object_for_server_id(id))
+    {
+        selection.target = Some(killer_assets::collision::world::Target { object_id, spawned: 0, position: selection.hit.position, radius: 0.0, height: 0.0 });
+    }
+    selection
+}
+
+pub fn npc_window_notice(opcode: u8, size: usize) -> Option<killer_world::ChatLine> {
+    if !NPC_WINDOW_OPCODES.contains(&opcode) {
+        return None;
+    }
+    let text = format!("o NPC respondeu com {} ({size} bytes): janela ainda não implementada", l2_net::game::describe_server_opcode(opcode));
+    Some(killer_world::ChatLine::new(killer_world::chat::CHAT_SYSTEM, String::new(), text))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

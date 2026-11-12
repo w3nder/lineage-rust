@@ -12,6 +12,7 @@ pub struct WebLobby {
     pub lobby: Lobby,
     pub audio: crate::audio::Audio,
     audio_time: f64,
+    audio_frame: Option<crate::audio::AudioFrame>,
     pub loading_stats: String,
     client: Client,
     tables: Arc<DatTables>,
@@ -80,7 +81,15 @@ impl WebLobby {
         client.catalog().release_files();
         let total_ms=started.elapsed().as_secs_f64()*1000.0;
         let loading_stats=serde_json::json!({"tile":"lobby","read_tables_ms":read_ms,"open_ms":open_ms,"level_ms":level_ms-open_ms,"config_ms":config_ms-level_ms,"tables_ms":read_ms-config_ms,"ground_ms":ground_ms-scene_ms,"upload_ms":upload_ms-ground_ms,"scene_ms":scene_ms-read_ms,"ground_upload_ms":upload_ms-scene_ms,"install_ms":total_ms-upload_ms,"total_ms":total_ms}).to_string();
-        Ok(Self {audio,audio_time:0.0,lobby,loading_stats,client,tables,cache:Default::default(),shared:Default::default(),effects:Default::default(),font,credit_font,c4:None,ui_bank:TextureBank::new(),options:None})
+        Ok(Self {audio,audio_time:0.0,audio_frame:None,lobby,loading_stats,client,tables,cache:Default::default(),shared:Default::default(),effects:Default::default(),font,credit_font,c4:None,ui_bank:TextureBank::new(),options:None})
+    }
+
+    fn interface_sound(&mut self,name: &str) {
+        if self.audio.available() && self.audio_frame.is_some() && !name.is_empty() && name!="NAME_None"
+            && let Some((format,encoded))=self.client.sound(name) {
+            if format.eq_ignore_ascii_case("WAV") {self.audio.interface(encoded,self.audio_frame);}
+            else {log::warn!("USound {name}: formato {format} indisponível");}
+        }
     }
 
     pub fn release(&mut self,renderer: &mut Renderer) {
@@ -97,6 +106,7 @@ impl WebLobby {
             crate::lobby::LobbyScreen::Create=>3,
         };
         let frame=crate::audio::AudioFrame {time:self.audio_time,view_actor_location:self.lobby.camera().eye.to_array(),max_radius_multiplier:50.0,realtime:false,replay_recording:false};
+        self.audio_frame=Some(frame);
         if let Err(error)=self.audio.update_lobby(std::path::Path::new("/client"),frame,state,self.lobby.create.race.map(|race|race as i32)) {log::warn!("áudio do lobby: {error}");}
         let credits=self.c4.as_ref().is_some_and(|c4|c4.credits_visible());
         if let Err(error)=self.audio.set_credits(std::path::Path::new("/client"),frame,credits,(self.audio_time*1000.0) as u32) {log::warn!("música dos créditos: {error}");}
@@ -131,6 +141,7 @@ impl WebLobby {
         c4.resize(ui_size);
         c4.update(&mut self.lobby,dt_ms);
         self.lobby.voices.clear();
+        self.lobby.stop_voices=false;
         if c4.needs_credit_font() {c4.set_credit_font(self.credit_font.take());}
         if let Some(link)=c4.take_credit_request() {
             match self.client.read_help_text(&link) {
@@ -147,7 +158,12 @@ impl WebLobby {
         }
         let slots=self.lobby.slots((ui_size.0 as f32,ui_size.1 as f32),1.0);
         let tags=c4.name_tags(&self.lobby,&slots);
+        if c4.take_options_close() && let Some(options)=&mut self.options && options.open()
+            && let Err(error)=options.toggle(&mut self.client,renderer,adapter,frame_size) {log::warn!("opções do lobby: {error}");}
+        let Some(c4)=self.c4.as_mut() else {return};
         if c4.take_options_request() {
+            let show=!self.options.as_ref().is_some_and(|options|options.open());
+            self.interface_sound(if show {"itemsound.window_open"} else {"itemsound.window_close"});
             if self.options.is_none() {
                 match crate::runtime::options::LobbyOptions::load(&mut self.client,&self.tables,ui_size) {
                     Ok(options)=>self.options=Some(options),
@@ -187,7 +203,10 @@ impl WebLobby {
         let (x,y)=(x as i32,y as i32);
         match (kind,button) {
             ("move",_)=>c4.mouse_move(x,y,&self.lobby),
-            ("down",0)=>c4.mouse_down(x,y,&mut self.lobby,&self.font),
+            ("down",0)=>{
+                c4.mouse_down(x,y,&mut self.lobby,&self.font);
+                for name in std::mem::take(&mut c4.sounds) {self.interface_sound(name);}
+            }
             ("up",0)=>c4.mouse_up(x,y,&mut self.lobby,&self.font),
             _=>{}
         }

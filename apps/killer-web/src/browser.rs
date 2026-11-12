@@ -212,6 +212,7 @@ impl WebClient {
                 if let Some(list)=result["outgoing"].as_array_mut() {list.push(serde_json::json!(frame));}
             }
         }
+        if let Some(card)=self.network.card_event.take() {self.lobby_state().pending_card=Some(card);}
         if result["servers"] == true {
             let servers=self.network.servers.clone();
             let lobby=self.lobby_state();
@@ -301,7 +302,8 @@ impl WebClient {
                     let hour=clock.hour(killer_platform::time::Instant::now());
                     if let Err(failure)=weather.change_env(info.env(),info.immediate(),0.02,0.02,1.0,hour) {log::warn!("SSQInfo: ChangeEnv recusado: {failure:?}");}
                 }
-                if teleported || entering && matches!(event,killer_world::session::SessionEvent::UserInfo(_)) {
+                if teleported && !runtime.world.teleport_announce {runtime.teleported();}
+                if entering && matches!(event,killer_world::session::SessionEvent::UserInfo(_)) {
                     if let Some(me)=&runtime.world.me {
                         self.network.command(killer_world::NetCommand::Validate {position:me.position.to_array().map(|v|v as i32),heading:me.heading}).map_err(error)?;
                     }
@@ -363,7 +365,12 @@ impl WebClient {
                 self.login_start(account,password)?;
                 self.lobby_actions.push(serde_json::json!({"kind":"connect"}));
             }
-            LobbyCommand::CardAnswer(_) => {}
+            LobbyCommand::CardAnswer(value) => {
+                if let Some(card_id)=self.network.card {
+                    let bytes=self.network.card_answer(card_id,value).map_err(error)?;
+                    self.lobby_actions.push(serde_json::json!({"kind":"send","bytes":bytes}));
+                }
+            }
             LobbyCommand::NoticeAnswer(agreed) => {
                 if agreed {
                     let bytes=self.network.accept_notice().map_err(error)?;
@@ -583,6 +590,7 @@ impl WebClient {
 
     pub fn movement(&mut self, forward: bool, back: bool, left: bool, right: bool, fast: bool) {
         self.movement = Movement { forward, back, left, right, fast };
+        if let Some(runtime)=&mut self.runtime {runtime.keyboard_moving=(forward || back) && !runtime.ui.chat_focused();}
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -619,7 +627,7 @@ impl WebClient {
             "move" => {
                 self.click.moved((x,y));
                 runtime.ui.mouse_move(x as i32,y as i32);
-                if buttons & 3 != 0 && !self.ui_drag {
+                if buttons & 3 != 0 && !self.ui_drag && !(runtime.world.camera_fixed && runtime.world.pending_click_target.is_some()) {
                     runtime.orbit.drag(dx,dy);
                     let (yaw,pitch)=runtime.orbit.settings.drag_radians(dx,dy);
                     for delta in [yaw,pitch] {
@@ -652,6 +660,7 @@ impl WebClient {
         if self.runtime.is_none() && self.lobby_ui_enabled {self.lobby_ui.input.wheel(ticks);return;}
         if let Some(runtime) = &mut self.runtime && !runtime.ui.wheel_over(x,y,ticks,&runtime.chat) {
             runtime.orbit.wheel(ticks,runtime.world.me.as_ref().map(|me|me.collision_radius));
+            if let Some(command)=runtime.ui.tutorial.fire(killer_ui::tutorial::EVENT_ZOOM) {runtime.ui.keys.send(command);}
         }
     }
 
@@ -666,7 +675,7 @@ impl WebClient {
         let Some(runtime) = &mut self.runtime else {return};
         runtime.ui.keys.alt=alt;
         if vk==0x11 {runtime.ui.keys.ctrl=pressed;}
-        if vk==0x10 {runtime.ui.keys.shift=pressed;}
+        if vk==0x10 {runtime.ui.keys.shift=pressed;runtime.ui.shift_changed(pressed);}
         let msg = match (alt,pressed) {(true,true)=>0x104,(true,false)=>0x105,(false,true)=>0x100,(false,false)=>0x101};
         let mut lparam = if vk == 0x79 {0x44 << 16} else {0};
         if alt {lparam |= 1 << 29;}
@@ -682,7 +691,9 @@ impl WebClient {
         let key = match text {
             "Enter"=>Some(InputKey::Enter),"Escape"=>Some(InputKey::Escape),"Backspace"=>Some(InputKey::Backspace),
             "ArrowLeft"=>Some(InputKey::Left),"ArrowRight"=>Some(InputKey::Right),
-            _=>text.chars().next().filter(|_|text.chars().count()==1).map(InputKey::Char),
+            "Home"=>Some(InputKey::Home),"End"=>Some(InputKey::End),"Delete"=>Some(InputKey::Delete),
+            "ArrowUp"=>Some(InputKey::Up),"ArrowDown"=>Some(InputKey::Down),
+            _=>text.chars().next().filter(|_|text.chars().count()==1).map(|c|if matches!(c,'\n'|'\r') {InputKey::Enter} else {InputKey::Char(c)}),
         };
         let action=key.map_or(crate::ui2d::KeyAction::Ignored,|key|runtime.ui.key(key));
         if action==crate::ui2d::KeyAction::Ignored {runtime.key_bind(vk,true);}
@@ -773,6 +784,13 @@ impl WebClient {
         self.render_frames+=1;
         self.renderer.queue().submit(commands.into_iter().chain([encoder.finish()]));
         self.renderer.queue().present(output);
+        if let Some(runtime)=&mut self.runtime {
+            let exit=std::mem::take(&mut runtime.exit_requested);
+            if (std::mem::take(&mut runtime.leave_requested) || exit)
+                && let Err(reason)=self.lobby_command(if exit {crate::lobby::LobbyCommand::Exit} else {crate::lobby::LobbyCommand::Back}) {
+                self.lobby_error(reason.as_string().unwrap_or_else(||"Falha na conexão".into()));
+            }
+        }
         if self.runtime.as_ref().is_some_and(|runtime|runtime.disconnect_accepted) {
             let text=self.runtime.as_ref().and_then(|runtime|runtime.connection_lost_text());
             self.network.disconnect_pending=false;

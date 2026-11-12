@@ -209,6 +209,10 @@ mod preparation;
 pub mod cursor;
 
 #[cfg(target_arch = "wasm32")]
+#[path = "../../killer/src/touch.rs"]
+pub mod touch;
+
+#[cfg(target_arch = "wasm32")]
 mod lobby_ui;
 
 pub mod lobby_input;

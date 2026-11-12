@@ -176,9 +176,7 @@ impl WalkPhysics {
     }
 
     pub fn forget(&mut self, object_id: i32) {
-        self.state.falling.remove(&object_id);
-        self.state.grounded.remove(&object_id);
-        self.state.swimming.remove(&object_id);
+        self.state.forget(object_id);
     }
 
     pub fn foot_volumes(&self) -> &std::collections::HashMap<i32, FootVolume> {
@@ -249,6 +247,12 @@ pub struct WalkState {
 }
 
 impl WalkState {
+    pub fn forget(&mut self, object_id: i32) {
+        self.falling.remove(&object_id);
+        self.grounded.remove(&object_id);
+        self.swimming.remove(&object_id);
+    }
+
     pub fn retain_present(&mut self, world: &killer_world::World) {
         let present = |id: &i32| world.entities.contains_key(id) || world.me.as_ref().is_some_and(|me| me.object_id == *id);
         self.falling.retain(|id, _| present(id));

@@ -11,6 +11,8 @@ pub struct Network {
     pub events: Vec<SessionEvent>,
     pub servers: Vec<l2_net::login::GameServer>,
     pub notice: Option<l2_net::login::LoginNotice>,
+    pub card: Option<i32>,
+    pub card_event: Option<(i32,i8,bool)>,
     pub outgoing: Vec<Vec<u8>>,
     pub entered: bool,
     pub disconnect_pending: bool,
@@ -30,6 +32,7 @@ impl Network {
             match update {
                 LoginUpdate::Send(bytes)=>self.outgoing.push(bytes),
                 LoginUpdate::Notice(notice)=>{result["notice"]=json!(true);self.notice=Some(notice);},
+                LoginUpdate::Card {card_id,position,retry}=>{self.card=Some(card_id);self.card_event=Some((card_id,position,retry));}
                 LoginUpdate::Servers(servers)=>{result["servers"]=json!(true);self.servers=servers;},
                 LoginUpdate::Authorized(auth)=>{
                     self.game=Some(Game::new(std::mem::take(&mut self.account),auth));
@@ -44,6 +47,10 @@ impl Network {
 
     pub fn accept_notice(&mut self) -> Result<Vec<u8>,String> {
         self.login.as_mut().ok_or("login não iniciado")?.accept_notice()
+    }
+
+    pub fn card_answer(&mut self,card_id: i32,value: i32) -> Result<Vec<u8>,String> {
+        self.login.as_mut().ok_or("login não iniciado")?.card_answer(card_id,value)
     }
 
     pub fn choose_server(&mut self,id: u8) -> Result<Vec<u8>,String> {
