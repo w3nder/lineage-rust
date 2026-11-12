@@ -1,0 +1,8 @@
+L2UI_CH3.ChatWnd.chatting_system
+L2UI_CH3.ScrollBar.ScrollBarUpBtn
+L2UI_CH3.ScrollBar.ScrollBarUpOnBtn
+L2UI_CH3.ScrollBar.ScrollBarDownBtn
+L2UI_CH3.ScrollBar.ScrollBarDownOnBtn
+L2UI_CH3.ScrollBar.SliderBarTop
+L2UI_CH3.ScrollBar.SliderBarCenter
+L2UI_CH3.ScrollBar.SliderBarBottom

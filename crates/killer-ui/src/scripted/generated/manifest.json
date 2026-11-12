@@ -1,0 +1,219 @@
+[
+  {
+    "class": "BoardWnd",
+    "parent": "UIScript",
+    "profile": "c4",
+    "converted": [
+      "HandleShowBoardPacket",
+      "ShowBBSTab",
+      "OnClickBookmark"
+    ],
+    "not_selected": [
+      "OnLoad",
+      "OnShow",
+      "OnHide",
+      "OnEvent",
+      "OnClickButton",
+      "Clear",
+      "HandleShowBBS"
+    ],
+    "apis": [
+      "ParseInt",
+      "ParseString",
+      "UIAPI_HTMLCTRL.ControllerExecution",
+      "UIAPI_HTMLCTRL.SetHtmlBuffData",
+      "UIAPI_WINDOW.HideWindow",
+      "UIAPI_WINDOW.SetFocus",
+      "UIAPI_WINDOW.ShowWindow"
+    ],
+    "host_contracts": {
+      "BoardWndPacketHost": [
+        "ParseInt",
+        "ParseString",
+        "UIAPI_HTMLCTRL.SetHtmlBuffData",
+        "UIAPI_WINDOW.HideWindow",
+        "UIAPI_WINDOW.SetFocus",
+        "UIAPI_WINDOW.ShowWindow"
+      ],
+      "BoardWndHost": [
+        "UIAPI_HTMLCTRL.ControllerExecution"
+      ]
+    },
+    "bounded_loops": [
+      {
+        "method": "HandleShowBoardPacket",
+        "counter": "idx",
+        "label": "J0x41",
+        "start": 0,
+        "end": 8
+      }
+    ],
+    "adaptations": [
+      {
+        "method": "HandleShowBoardPacket",
+        "c4_address": "0x10068f20",
+        "source_ast_sha256": "af2086fe235f7c80380205e8ab9866809c2616254b418065b79afe7102013824",
+        "change": "SetHtml before SetLinks; unconditional Show/SetFocus; no explicit PlayConsoleSound"
+      }
+    ],
+    "omissions": [],
+    "dependencies": {
+      "HandleShowBoardPacket": [
+        "IFST_WINDOW_OPEN",
+        "ParseInt",
+        "ParseString",
+        "PlayConsoleSound",
+        "UIAPI_HTMLCTRL.SetHtmlBuffData",
+        "UIAPI_WINDOW.HideWindow",
+        "UIAPI_WINDOW.SetFocus",
+        "UIAPI_WINDOW.ShowWindow",
+        "m_Command",
+        "m_bBtnLock",
+        "m_bShow"
+      ],
+      "ShowBBSTab": [
+        "Len",
+        "UIAPI_HTMLCTRL.ControllerExecution",
+        "int",
+        "m_bBtnLock"
+      ],
+      "OnClickBookmark": [
+        "Len",
+        "UIAPI_HTMLCTRL.ControllerExecution",
+        "int",
+        "m_Command",
+        "m_bBtnLock"
+      ]
+    },
+    "rust_class": "BoardWnd",
+    "unused_bindings": [],
+    "source_sha256": "1241341b22f868ef57379dd908f6c13e515985619d941040456546a356f98e60"
+  },
+  {
+    "class": "HelpHtmlWnd",
+    "parent": "UIScript",
+    "profile": "c4",
+    "converted": [
+      "OnShow",
+      "OnHide",
+      "HandleShowHelp",
+      "HandleLoadHelpHtml"
+    ],
+    "not_selected": [
+      "OnLoad",
+      "OnEvent"
+    ],
+    "apis": [
+      "ParseString",
+      "UIAPI_HTMLCTRL.LoadHtml",
+      "UIAPI_HTMLCTRL.LoadHtmlFromString",
+      "UIAPI_WINDOW.HideWindow",
+      "UIAPI_WINDOW.SetFocus",
+      "UIAPI_WINDOW.ShowWindow"
+    ],
+    "host_contracts": {
+      "HelpHtmlWndHost": [
+        "ParseString",
+        "UIAPI_HTMLCTRL.LoadHtml",
+        "UIAPI_HTMLCTRL.LoadHtmlFromString",
+        "UIAPI_WINDOW.HideWindow",
+        "UIAPI_WINDOW.SetFocus",
+        "UIAPI_WINDOW.ShowWindow"
+      ]
+    },
+    "bounded_loops": [],
+    "adaptations": [
+      {
+        "method": "HandleShowHelp",
+        "c4_address": "0x1005bd20",
+        "change": "no explicit PlayConsoleSound in native toggle"
+      }
+    ],
+    "omissions": [],
+    "dependencies": {
+      "OnShow": [
+        "m_bShow"
+      ],
+      "OnHide": [
+        "m_bShow"
+      ],
+      "HandleShowHelp": [
+        "IFST_WINDOW_CLOSE",
+        "IFST_WINDOW_OPEN",
+        "Len",
+        "ParseString",
+        "PlayConsoleSound",
+        "UIAPI_HTMLCTRL.LoadHtml",
+        "UIAPI_WINDOW.HideWindow",
+        "UIAPI_WINDOW.SetFocus",
+        "UIAPI_WINDOW.ShowWindow",
+        "m_bShow"
+      ],
+      "HandleLoadHelpHtml": [
+        "Len",
+        "ParseString",
+        "UIAPI_HTMLCTRL.LoadHtmlFromString"
+      ]
+    },
+    "rust_class": "HelpHtmlWnd",
+    "unused_bindings": [],
+    "source_sha256": "77f1915b4f66eebb9b56e5d86144569514e64e9b4606dbbed1ea0c5dfdda1647"
+  },
+  {
+    "class": "TutorialViewerWnd",
+    "parent": "UICommonAPI",
+    "profile": "c4",
+    "converted": [
+      "OnEvent"
+    ],
+    "not_selected": [
+      "OnLoad"
+    ],
+    "apis": [
+      "HideWindow",
+      "ParseString",
+      "ShowWindowWithFocus",
+      "UIAPI_HTMLCTRL.GetFrameMaxHeight",
+      "UIAPI_HTMLCTRL.LoadHtmlFromString",
+      "UIAPI_WINDOW.GetRect",
+      "UIAPI_WINDOW.MoveTo",
+      "UIAPI_WINDOW.SetWindowSize"
+    ],
+    "host_contracts": {
+      "TutorialViewerWndHost": [
+        "HideWindow",
+        "ParseString",
+        "ShowWindowWithFocus",
+        "UIAPI_HTMLCTRL.GetFrameMaxHeight",
+        "UIAPI_HTMLCTRL.LoadHtmlFromString",
+        "UIAPI_WINDOW.GetRect",
+        "UIAPI_WINDOW.MoveTo",
+        "UIAPI_WINDOW.SetWindowSize"
+      ]
+    },
+    "bounded_loops": [],
+    "adaptations": [
+      {
+        "method": "OnEvent",
+        "c4_address": "0x1011e9e0",
+        "change": "Rect.nHeight = HtmlHeight + 8"
+      }
+    ],
+    "omissions": [],
+    "dependencies": {
+      "OnEvent": [
+        "HideWindow",
+        "ParseString",
+        "ShowWindowWithFocus",
+        "UIAPI_HTMLCTRL.GetFrameMaxHeight",
+        "UIAPI_HTMLCTRL.LoadHtmlFromString",
+        "UIAPI_WINDOW.GetRect",
+        "UIAPI_WINDOW.MoveTo",
+        "UIAPI_WINDOW.SetWindowSize"
+      ]
+    },
+    "rust_class": "TutorialViewerWnd",
+    "unused_bindings": [],
+    "source_sha256": "39da140b4d77355582512a5b3e952d49c805f11a1fcdef41fe969b4f19e3ebb5"
+  }
+]

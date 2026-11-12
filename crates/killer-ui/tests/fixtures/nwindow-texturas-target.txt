@@ -1,0 +1,14 @@
+L2UI_CH3.FrameCtrl.FrameCloseBtn
+L2UI_CH3.FrameCtrl.smallbar1
+L2UI_CH3.FrameCtrl.smallbar2
+L2UI_CH3.FrameCtrl.smallbar3
+L2UI_CH3.SmallWnd.HpBar
+L2UI_CH3.SmallWnd.HpBar_back
+L2UI_CH3.SmallWnd.MpBar
+L2UI_CH3.SmallWnd.MpBar_back
+L2UI_CH3.SmallWnd.SmallWindow_Back%d
+L2UI_ch3.SmallWnd.Smallwindow_back1
+L2UI_ch3.SmallWnd.Smallwindow_back2
+L2UI_ch3.SmallWnd.Smallwindow_back3
+L2UI_CH3.SmallWnd.SmallWindow_Back3_ex
+L2UI_CH3.TargetWnd.Target_InfoButton

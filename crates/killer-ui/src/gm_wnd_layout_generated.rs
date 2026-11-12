@@ -1,0 +1,22 @@
+use crate::window::Rect;
+
+pub const SIZE: (i32, i32) = (256, 276);
+pub const RECT_7C: Rect = Rect::new(0, 0, 256, 20);
+pub const RECT_EC: Rect = Rect::new(35, 55, 112, 14);
+pub const RECT_F0: Rect = Rect::new(74, 96, 54, 18);
+pub const RECT_F4: Rect = Rect::new(138, 96, 54, 18);
+pub const RECT_F8: Rect = Rect::new(10, 96, 54, 18);
+pub const RECT_FC: Rect = Rect::new(10, 117, 54, 18);
+pub const RECT_100: Rect = Rect::new(138, 117, 54, 18);
+pub const RECT_104: Rect = Rect::new(10, 138, 54, 18);
+pub const RECT_108: Rect = Rect::new(10, 75, 54, 18);
+pub const RECT_10C: Rect = Rect::new(138, 75, 54, 18);
+pub const RECT_110: Rect = Rect::new(74, 138, 54, 18);
+pub const RECT_114: Rect = Rect::new(74, 75, 54, 18);
+pub const RECT_118: Rect = Rect::new(74, 117, 54, 18);
+pub const RECT_11C: Rect = Rect::new(138, 138, 54, 18);
+pub const RECT_120: Rect = Rect::new(10, 159, 54, 18);
+pub const RECT_124: Rect = Rect::new(74, 159, 54, 18);
+pub const RECT_128: Rect = Rect::new(138, 159, 54, 18);
+pub const RECT_12C: Rect = Rect::new(10, 180, 54, 18);
+pub const RECT_130: Rect = Rect::new(74, 180, 54, 18);

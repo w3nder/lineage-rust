@@ -1,0 +1,47 @@
+name: L2UnkBot (Tauri)
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["bot-v*"]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            name: windows-x64
+            bundles: nsis
+          - os: macos-latest
+            name: macos-arm64
+            bundles: app,dmg
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Interface
+        working-directory: apps/killer-bot-ui/ui
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+      - name: Testes
+        run: cargo test -p killer-bot-ui -p killer-bot-core -p killer-bot-script -j2
+        env:
+          CARGO_INCREMENTAL: "0"
+      - name: Empacotar
+        working-directory: apps/killer-bot-ui
+        run: ui/node_modules/.bin/tauri build --bundles ${{ matrix.bundles }}
+        env:
+          CARGO_INCREMENTAL: "0"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: L2UnkBot-${{ matrix.name }}
+          path: target/release/bundle/**/*

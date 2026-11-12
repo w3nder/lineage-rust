@@ -1,0 +1,10 @@
+[package]
+name = "l2-crypto"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+license = "LicenseRef-Canastra-Source-1.0"
+
+[dependencies]
+flate2.workspace = true
+num-bigint.workspace = true

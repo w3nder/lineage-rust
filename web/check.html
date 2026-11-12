@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<title>Killer • Verificação de plataforma</title>
+<style>body{background:#101216;color:#e3e6eb;font:16px system-ui;margin:40px;max-width:800px}pre{white-space:pre-wrap;line-height:1.6}</style>
+<h1>Verificação da plataforma web</h1>
+<p>Usa apenas três arquivos sintéticos gerados em memória. Verifica também opções com WebGPU. Não acessa a pasta do cliente.</p>
+<pre id="result" role="status">Executando…</pre>
+<script type="module">
+const worker=new Worker('./check-worker.js',{type:'module'});
+worker.onmessage=({data})=>{document.querySelector('#result').textContent=data;worker.terminate();};
+worker.onerror=event=>{document.querySelector('#result').textContent=`Falhou: ${event.message}`;worker.terminate();};
+</script>
+</html>

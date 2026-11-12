@@ -1,0 +1,10 @@
+[package]
+name = "killer-font"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+fontdue = { version = "0.9", default-features = false, features = ["hashbrown"] }
+ttf-parser = { version = "0.25", default-features = false, features = ["std"] }

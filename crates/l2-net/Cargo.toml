@@ -1,0 +1,11 @@
+[package]
+name = "l2-net"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+thiserror.workspace = true
+blowfish.workspace = true
+cipher.workspace = true

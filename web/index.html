@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UnkBot • Jogar</title>
+<link rel="icon" type="image/png" href="art/unkbot_favicon.png">
+<style>
+@font-face{font-family:Cinzel;font-weight:600;font-display:swap;src:url(art/fonts/cinzel-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:Cinzel;font-weight:700;font-display:swap;src:url(art/fonts/cinzel-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:Inter;font-weight:400;font-display:swap;src:url(art/fonts/inter-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:Inter;font-weight:500;font-display:swap;src:url(art/fonts/inter-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:Inter;font-weight:600;font-display:swap;src:url(art/fonts/inter-latin-600-normal.woff2) format('woff2')}
+:root{color-scheme:dark;--abyss:#01020a;--raise:#101528;--rim:rgba(72,149,244,.32);--hair:rgba(169,196,221,.13);--text:#eaf1f9;--body:#a9c4dd;--quiet:#8a9db4;--frost:#4895f4;--frost-hi:#75b1f8;--ink:#020a1e;--display:Cinzel,Georgia,serif;--sans:Inter,system-ui,sans-serif;--ease:cubic-bezier(.16,1,.3,1)}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--abyss);color:var(--text);font:14px var(--sans)}canvas{display:block;width:100%;height:100%;outline:none}
+#status{position:absolute;top:20px;left:20px;padding:14px 20px;background:#101528ee;border:1px solid var(--rim);border-radius:12px;max-width:560px;white-space:pre-wrap}#status[hidden]{display:none}
+#notice{position:absolute;left:20px;bottom:20px;max-width:480px;padding:12px;background:#101528;border:1px solid var(--rim);border-radius:10px}#notice[hidden]{display:none}#notice button{margin-left:12px;padding:4px 8px;font-size:12px}
+button{background:var(--frost);color:var(--ink);border:0;padding:15px 22px;border-radius:12px;font:600 15px var(--sans);cursor:pointer;width:fit-content}
+:focus-visible{outline:2px solid var(--frost);outline-offset:3px;border-radius:8px}
+#welcome{position:absolute;inset:0;overflow:auto;background:var(--abyss);color:var(--text);font-family:var(--sans)}#welcome[hidden]{display:none}
+#welcome .hero{position:fixed;inset:0;overflow:hidden;background:radial-gradient(circle at 50% 38%,#102a63 0%,#07102a 38%,var(--abyss) 74%)}
+#welcome .hero i{position:absolute;left:50%;top:34%;width:min(900px,120vw);aspect-ratio:1;transform:translate(-50%,-50%);background:radial-gradient(circle,#2878ff33 0%,#2878ff10 34%,#0000 62%);animation:breathe 7s ease-in-out infinite}
+@keyframes breathe{0%,100%{opacity:.7;transform:translate(-50%,-50%) scale(.94)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.06)}}
+#welcome .shade{display:none}
+#welcome .gate{position:relative;z-index:1;min-height:100%;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;padding:28px 16px 72px}
+#welcome .logo{height:min(190px,24vh);width:auto;max-width:60vw;filter:drop-shadow(0 8px 26px rgba(40,120,255,.42));animation:rise .9s both var(--ease)}
+#welcome .card{display:flex;flex-direction:column;width:min(440px,100%);box-sizing:border-box;padding:28px 26px 20px;border-radius:20px;background:linear-gradient(180deg,rgba(22,24,44,.9),rgba(8,10,24,.94));border:1px solid var(--rim);box-shadow:0 1px 0 rgba(190,232,250,.1) inset,0 28px 70px -12px rgba(0,0,0,.7),0 0 90px -30px rgba(40,120,255,.4);animation:rise .9s .12s both var(--ease)}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+#welcome .card .tag{margin:0 0 6px;font:700 20px/1.25 var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--text);text-align:center}
+#welcome .card p{max-width:none;margin:0 0 18px;line-height:1.55;color:var(--body);font-size:14px;text-align:center}
+#hud-choice{margin:0 0 18px;border:0;padding:0;min-width:0}#hud-choice legend{padding:0;margin:0 0 8px;color:var(--quiet);font:600 11px var(--sans);letter-spacing:.14em;text-transform:uppercase}
+#hud-choice .options{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#hud-choice button.option{display:flex;flex-direction:column;align-items:flex-start;gap:3px;width:auto;padding:12px 14px;text-align:left;background:rgba(72,149,244,.06);color:var(--body);border:1px solid var(--hair);border-radius:12px;font:600 13px var(--sans);letter-spacing:0;position:relative;box-shadow:none;transition:background 180ms var(--ease),border-color 180ms var(--ease)}
+#hud-choice button.option small{margin:0;color:var(--quiet);font:500 11px/1.3 var(--sans)}
+#hud-choice button.option:hover{background:rgba(72,149,244,.12);border-color:var(--rim)}
+#hud-choice button.option[aria-pressed=true]{background:rgba(72,149,244,.16);border-color:var(--frost);color:var(--text);box-shadow:0 0 0 1px rgba(72,149,244,.4),0 8px 22px -10px rgba(72,149,244,.6)}
+#hud-choice button.option[aria-pressed=true] small{color:var(--body)}
+#hud-choice button.option[aria-pressed=true]::after{content:'';position:absolute;right:11px;top:13px;width:8px;height:8px;border-radius:50%;background:var(--frost-hi);box-shadow:0 0 8px var(--frost)}
+#hud-style{display:none}
+#welcome button{width:100%;border-radius:12px;padding:15px 18px;font:600 16px var(--sans);letter-spacing:.02em;transition:transform 180ms var(--ease),box-shadow 180ms var(--ease),background 180ms var(--ease)}
+#open,#play{background:var(--frost);color:var(--ink);box-shadow:0 10px 28px -10px rgba(72,149,244,.6)}#open:hover,#play:hover{background:var(--frost-hi);transform:translateY(-1px)}#open:disabled,#play:disabled{opacity:.6;cursor:wait}
+#welcome .card:has(#play:not([hidden])) #open,#welcome .card:has(#reuse:not([hidden])) #open{background:none;color:var(--quiet);border:0;box-shadow:none;padding:10px;margin-top:8px;font:500 13px var(--sans);letter-spacing:0;text-decoration:underline;text-decoration-color:var(--hair);text-underline-offset:3px}
+#welcome .card:has(#play:not([hidden])) #open:hover,#welcome .card:has(#reuse:not([hidden])) #open:hover{color:var(--text);transform:none;text-decoration-color:var(--frost)}
+#welcome .card:has(#reuse:not([hidden])) #play{display:none}
+#reuse{margin:0;background:var(--frost);color:var(--ink);border:0;box-shadow:0 10px 28px -10px rgba(72,149,244,.6)}#reuse:hover{background:var(--frost-hi);transform:translateY(-1px)}#reuse[hidden]{display:none}
+#welcome label{display:block}
+#welcome .foot{position:fixed;left:0;right:0;bottom:0;z-index:2;display:flex;align-items:center;gap:14px;padding:10px 22px;background:rgba(1,2,10,.8);border-top:1px solid var(--hair);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font:500 12px var(--sans);color:var(--quiet);letter-spacing:.02em}
+#welcome .foot .field{display:flex;align-items:center;gap:10px;margin:0}#welcome .foot .field span{color:var(--frost-hi);text-transform:uppercase;letter-spacing:.14em;font-size:10.5px}
+#welcome .foot input{box-sizing:border-box;width:min(280px,42vw);padding:5px 9px;border:1px solid var(--hair);border-radius:8px;background:rgba(1,2,10,.6);color:var(--body);font:inherit}#welcome .foot input:focus{outline:none;border-color:var(--frost)}
+#welcome .foot .sep{width:1px;height:14px;background:var(--hair)}
+#welcome .foot .chip{display:inline-flex;align-items:center;gap:7px}#welcome .foot .chip i{width:7px;height:7px;border-radius:50%;background:var(--quiet)}
+#welcome .foot .chip[data-state=ok] i{background:#7dd88a;box-shadow:0 0 8px #7dd88a99}#welcome .foot .chip[data-state=missing] i{background:#e0605a;box-shadow:0 0 8px #e0605a99}
+#welcome .foot .chip b{font-weight:500;color:var(--body)}
+#welcome .foot .meta{margin-left:auto;font-family:var(--display);letter-spacing:.14em;text-transform:uppercase;font-size:11px}
+@media(max-width:700px){#welcome .foot{flex-wrap:wrap;gap:8px 12px;padding:10px 16px}#welcome .foot .meta{display:none}}
+@media(max-width:560px){#welcome .card{padding:24px 18px 16px}}
+@media(prefers-reduced-motion:reduce){#welcome .hero i,#welcome .card,#welcome .logo{animation:none}}
+label{display:block;margin:14px 0 6px;color:var(--body);font-size:12px}input:not([type=file]){box-sizing:border-box;width:100%;padding:10px;border:1px solid var(--hair);border-radius:8px;background:#0a0e1e;color:var(--text)}
+#welcome .foot .field[hidden],#welcome .foot .field[hidden]+.sep{display:none}
+#performance{position:absolute;right:18px;top:112px;padding:6px 10px;border-radius:10px;background:#101528e6;border:1px solid var(--rim);color:var(--body);font-size:11px;font-weight:600;letter-spacing:.02em}#performance[hidden]{display:none}#performance:hover,#performance[open]{background:#101528f5;border-color:var(--frost);color:var(--text)}#performance pre{white-space:pre-wrap;line-height:1.6}#performance[open]{max-height:calc(100vh - 140px);max-width:min(380px,calc(100vw - 60px));overflow:auto}
+#loading{position:fixed;inset:0;z-index:5;background:radial-gradient(circle at 50% 46%,#102a63 0%,var(--abyss) 72%);color:var(--text);font-family:var(--sans)}#loading[hidden]{display:none}#loading .art{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity .5s}#loading.with-art .art{opacity:1}#loading .shade{position:absolute;inset:auto 0 0 0;height:46%;background:linear-gradient(transparent,#01020aee)}
+#loading .panel{position:absolute;left:50%;bottom:5%;transform:translateX(-50%);box-sizing:border-box;width:min(580px,88vw);padding:18px 22px 16px;background:linear-gradient(180deg,rgba(22,24,44,.92),rgba(8,10,24,.96));border:1px solid var(--rim);border-radius:16px;box-shadow:0 28px 70px -12px #000b,0 0 90px -30px rgba(40,120,255,.4);font:13px/1.5 var(--sans)}
+#loading .stage{font:600 14px var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--text)}#loading .detail{min-height:1.5em;font-size:12px;color:var(--body)}
+#loading .bar{height:6px;margin:10px 0 8px;background:rgba(72,149,244,.12);border-radius:99px;overflow:hidden}#loading .bar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--frost),var(--frost-hi));box-shadow:0 0 12px rgba(72,149,244,.6);transition:width .25s}
+#loading .steps{display:grid;grid-template-columns:1fr 1fr;gap:0 16px;margin:6px 0 0;padding:0;list-style:none;font-size:11px;color:var(--quiet)}#loading .steps li[data-state=done]{color:var(--body)}#loading .steps li[data-state=running]{color:var(--frost-hi)}
+</style>
+<canvas id="game" tabindex="0" aria-label="Mundo do Killer"></canvas>
+<section id="welcome"><div class="hero" aria-hidden="true"><i></i></div><div class="shade"></div><main class="gate"><img class="logo" src="art/unkbot_logo.png" alt="UnkBot"><div class="card"><p class="tag">Entrar no jogo</p><p id="intro">Os arquivos do jogo são carregados sob demanda, sem instalar nada.</p><fieldset id="hud-choice"><legend>Interface</legend><select id="hud-style" aria-hidden="true" tabindex="-1"><option value="modern">Moderna</option><option value="classic">Original (C4)</option></select><div class="options"><button type="button" class="option" data-style="modern" aria-pressed="true">Moderna<small>Novo visual do HUD</small></button><button type="button" class="option" data-style="classic" aria-pressed="false">Original C4<small>Janelas clássicas</small></button></div></fieldset><button id="play">Jogar</button><button id="reuse" hidden></button><button id="open" class="secondary">Usar a pasta do cliente neste computador</button></div></main><footer class="foot"><label class="field" id="gateway-field" for="gateway"><span>Gateway</span><input id="gateway" value="ws://127.0.0.1:8081" required spellcheck="false" autocomplete="off"></label><span class="sep"></span><span class="chip" id="gpu-state" data-state="checking"><i></i><b>WebGPU</b></span><span class="meta">UnkBot</span></footer></section>
+<input id="folder" type="file" webkitdirectory multiple hidden>
+<details id="performance" hidden><summary>Desempenho</summary><pre></pre></details>
+<section id="loading" role="status" aria-live="polite" hidden><canvas class="art" aria-hidden="true"></canvas><div class="shade"></div><div class="panel"><div class="stage"></div><div class="detail"></div><div class="bar"><i></i></div><ol class="steps"></ol></div></section>
+<div id="status" role="status" hidden></div>
+<div id="notice" role="alert" hidden><span></span><button type="button" aria-label="Fechar aviso">Fechar</button></div>
+
+<script type="module" src="./main.js?v=lobby-1"></script>
+</html>

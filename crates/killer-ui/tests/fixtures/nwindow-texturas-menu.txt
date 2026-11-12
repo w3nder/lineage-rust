@@ -1,0 +1,14 @@
+L2UI_CH3.FrameCtrl.smallbar1
+L2UI_CH3.FrameCtrl.smallbar2
+L2UI_CH3.FrameCtrl.smallbar3
+L2UI_ch3.MenuIcon.MenuButton1
+L2UI_ch3.MenuIcon.MenuButton1_down
+L2UI_ch3.MenuIcon.MenuButton2
+L2UI_ch3.MenuIcon.MenuButton2_down
+L2UI_ch3.MenuIcon.MenuButton3
+L2UI_ch3.MenuIcon.MenuButton3_down
+L2UI_ch3.MenuIcon.MenuButton4
+L2UI_ch3.MenuIcon.MenuButton4_down
+L2UI_ch3.SmallWnd.Smallwindow_back1
+L2UI_ch3.SmallWnd.Smallwindow_back2
+L2UI_ch3.SmallWnd.Smallwindow_back3

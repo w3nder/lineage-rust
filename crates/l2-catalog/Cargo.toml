@@ -1,0 +1,14 @@
+[package]
+name = "l2-catalog"
+description = "Finds textures, static meshes and materials by path across an installed Lineage 2 client."
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+license = "LicenseRef-Canastra-Source-1.0"
+
+[dependencies]
+killer-platform = { path = "../killer-platform" }
+l2-crypto = { path = "../l2-crypto" }
+ue2-assets = { path = "../ue2-assets" }
+ue2-package = { path = "../ue2-package" }
+ue2-core = { path = "../ue2-core" }

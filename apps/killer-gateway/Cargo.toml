@@ -1,0 +1,12 @@
+[package]
+name = "killer-gateway"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+tokio = { version = "1", features = ["rt", "net", "io-util", "macros", "time", "sync"] }
+tokio-tungstenite = "0.30"
+futures-util = { version = "0.3", features = ["sink"] }
+clap.workspace = true

@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<title>Verificar cache e memória do Killer</title>
+<style>body{font:16px system-ui;background:#14191f;color:#eef0f2;max-width:900px;margin:48px auto;padding:24px}button,a{font:inherit;color:inherit}button{padding:12px;background:#293541;border:1px solid #6e7b89;border-radius:6px}pre{white-space:pre-wrap;line-height:1.6}canvas{display:none}</style>
+<h1>Cache e memória no carregamento</h1>
+<p>Compara duas cargas com cache local ou inspeciona apenas a montagem da cena, medindo as etapas e a memória. Mantém os arquivos originais e não conecta ao servidor.</p>
+<p><label>Cena <input id="scene" list="scenes" value="lobby" required pattern="lobby|[0-9]{2}_[0-9]{2}" aria-describedby="scene-help"><datalist id="scenes"><option value="lobby">Lobby</option><option value="22_22">Giran</option><option value="23_24">Heine</option></datalist></label></p>
+<p id="scene-help">Digite lobby ou o identificador de qualquer tile do cliente (por exemplo, 22_22). Cada teste carrega somente a cena escolhida.</p>
+<p><label>Opções do teste <select id="settings-source"><option value="saved">Preferências salvas no navegador</option><option value="original">Option.ini original (sem alterar preferências)</option></select></label></p>
+<pre id="settings-summary"></pre>
+<p><label><input type="checkbox" id="scene-only"> Inspecionar somente a preparação da cena, sem cache, colisão ou GPU</label></p>
+<button id="run" disabled>Procurando a pasta salva…</button>
+<button id="stop" disabled>Parar teste</button>
+<pre id="status" role="status"></pre>
+<p><a href="/">Voltar ao jogo</a></p>
+<canvas id="canvas" width="320" height="200"></canvas>
+<script type="module" src="./memory-check.mjs"></script>
+</html>

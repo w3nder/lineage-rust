@@ -1,0 +1,7 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>Verificar inicialização</title><p id="status">Iniciando teste do motor atual…</p><canvas id="canvas" width="320" height="200"></canvas><script type="module">
+const worker=new Worker('./boot-check-worker.js',{type:'module'});
+worker.onmessage=({data})=>{document.querySelector('#status').textContent=data;};
+worker.onerror=event=>{document.querySelector('#status').textContent=event.message;};
+const canvas=document.querySelector('#canvas').transferControlToOffscreen();
+worker.postMessage(canvas,[canvas]);
+</script></html>

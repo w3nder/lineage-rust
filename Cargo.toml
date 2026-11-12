@@ -1,0 +1,38 @@
+[workspace]
+resolver = "3"
+members = ["crates/*", "apps/*"]
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.95"
+license = "MIT"
+
+[workspace.dependencies]
+thiserror = "2"
+rustc-hash = "2"
+blowfish = "0.9"
+cipher = "0.4"
+clap = { version = "4", features = ["derive", "env"] }
+rpassword = "7"
+flate2 = "1"
+num-bigint = "0.4"
+glam = "0.33"
+png = "0.18"
+bytemuck = "1"
+wgpu = "30"
+pollster = "1"
+winit = "0.30"
+egui = "0.36"
+egui-wgpu = "0.36"
+egui-winit = "0.36"
+log = "0.4"
+env_logger = "0.11"
+
+[profile.release]
+codegen-units = 4
+
+[profile.dist]
+inherits = "release"
+lto = "fat"
+codegen-units = 1
+panic = "abort"

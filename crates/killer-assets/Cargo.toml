@@ -1,0 +1,26 @@
+[package]
+name = "killer-assets"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+rustc-hash.workspace = true
+killer-platform = { path = "../killer-platform" }
+l2-crypto = { path = "../l2-crypto" }
+killer-font = { path = "../killer-font" }
+l2-dat = { path = "../l2-dat" }
+l2-catalog = { path = "../l2-catalog" }
+ue2-package = { path = "../ue2-package" }
+ue2-assets = { path = "../ue2-assets" }
+ue2-level = { path = "../ue2-level" }
+glam.workspace = true
+png.workspace = true
+thiserror.workspace = true
+log.workspace = true
+bytemuck = { workspace = true, features = ["derive"] }
+
+[dev-dependencies]
+serde_json = "1"
+killer-ui = { path = "../killer-ui" }

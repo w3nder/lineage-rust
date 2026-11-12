@@ -1,0 +1,32 @@
+name: android
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [mobile/android]
+
+jobs:
+  apk:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rust
+        run: rustup target add aarch64-linux-android
+      - uses: Swatinem/rust-cache@v2
+      - name: cargo-apk
+        run: cargo install cargo-apk --locked --version 0.10.0
+      - name: Chave de assinatura
+        run: |
+          keytool -genkeypair -keystore "$RUNNER_TEMP/killer.jks" -storepass killer123 -keypass killer123 -alias killer -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Killer"
+          echo "CARGO_APK_RELEASE_KEYSTORE=$RUNNER_TEMP/killer.jks" >> "$GITHUB_ENV"
+          echo "CARGO_APK_RELEASE_KEYSTORE_PASSWORD=killer123" >> "$GITHUB_ENV"
+      - name: APK
+        run: |
+          find crates -maxdepth 1 -type f -exec mv {} "$RUNNER_TEMP/" \;
+          export ANDROID_NDK_ROOT="$ANDROID_NDK_LATEST_HOME"
+          export ANDROID_NDK_HOME="$ANDROID_NDK_LATEST_HOME"
+          cargo apk build --release -p killer --lib
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Killer-apk
+          path: target/release/apk/Killer.apk

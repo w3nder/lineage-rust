@@ -1,0 +1,12 @@
+[package]
+name = "ue2-level"
+description = "Placed actors and scene cameras read from Unreal Engine 2 map packages."
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+license = "LicenseRef-Canastra-Source-1.0"
+
+[dependencies]
+ue2-assets = { path = "../ue2-assets" }
+ue2-core = { path = "../ue2-core" }
+ue2-package = { path = "../ue2-package" }

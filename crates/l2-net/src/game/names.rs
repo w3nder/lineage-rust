@@ -1,0 +1,255 @@
+const SERVER_NAMES: &[(u8, &str)] = &[
+    (0x01, "MoveToLocation"),
+    (0x02, "NpcSay"),
+    (0x03, "CharInfo"),
+    (0x04, "UserInfo"),
+    (0x05, "Attack"),
+    (0x06, "Die"),
+    (0x07, "Revive"),
+    (0x08, "AttackOutOfRange"),
+    (0x09, "AttackInCoolTime"),
+    (0x0a, "AttackDeadTarget"),
+    (0x0b, "SpawnItem"),
+    (0x0c, "DropItem"),
+    (0x0d, "GetItem"),
+    (0x0e, "StatusUpdate"),
+    (0x0f, "NpcHtmlMessage"),
+    (0x10, "SellList"),
+    (0x11, "BuyList"),
+    (0x12, "DeleteObject"),
+    (0x13, "CharSelectInfo"),
+    (0x14, "AuthLoginFail"),
+    (0x15, "CharSelected"),
+    (0x16, "NpcInfo"),
+    (0x17, "CharTemplates"),
+    (0x18, "NewCharFail"),
+    (0x19, "CharCreateOk"),
+    (0x1a, "CharCreateFail"),
+    (0x1b, "ItemList"),
+    (0x1c, "SunRise"),
+    (0x1d, "SunSet"),
+    (0x1e, "TradeStart"),
+    (0x1f, "TradeStartOk"),
+    (0x20, "TradeOwnAdd"),
+    (0x21, "TradeOtherAdd"),
+    (0x22, "TradeDone"),
+    (0x23, "CharDeleteOk"),
+    (0x24, "CharDeleteFail"),
+    (0x25, "ActionFailed"),
+    (0x26, "ServerClose"),
+    (0x27, "InventoryUpdate"),
+    (0x28, "TeleportToLocation"),
+    (0x29, "TargetSelected"),
+    (0x2a, "TargetUnselected"),
+    (0x2b, "AutoAttackStart"),
+    (0x2c, "AutoAttackStop"),
+    (0x2d, "SocialAction"),
+    (0x2e, "ChangeMoveType"),
+    (0x2f, "ChangeWaitType"),
+    (0x31, "CreatePledge"),
+    (0x32, "AskJoinPledge"),
+    (0x33, "JoinPledge"),
+    (0x34, "WithdrawalPledge"),
+    (0x35, "OustPledgeMember"),
+    (0x36, "SetOustPledgeMember"),
+    (0x37, "DismissPledge"),
+    (0x38, "SetDismissPledge"),
+    (0x39, "AskJoinParty"),
+    (0x3a, "JoinParty"),
+    (0x3b, "WithdrawalParty"),
+    (0x3c, "OustPartyMember"),
+    (0x3d, "SetOustPartyMember"),
+    (0x3e, "DismissParty"),
+    (0x3f, "SetDismissParty"),
+    (0x40, "MagicAndSkillList"),
+    (0x41, "WareHouseDepositList"),
+    (0x42, "WareHouseWithdrawList"),
+    (0x43, "WareHouseDone"),
+    (0x44, "ShortCutRegister"),
+    (0x45, "ShortCutInit"),
+    (0x46, "ShortCutDelete"),
+    (0x47, "StopMove"),
+    (0x48, "MagicSkillUse"),
+    (0x49, "MagicSkillCanceled"),
+    (0x4a, "Say2"),
+    (0x4b, "EquipUpdate"),
+    (0x4c, "DoorInfo"),
+    (0x4d, "DoorStatusUpdate"),
+    (0x4e, "PartySmallWindowAll"),
+    (0x4f, "PartySmallWindowAdd"),
+    (0x50, "PartySmallWindowDeleteAll"),
+    (0x51, "PartySmallWindowDelete"),
+    (0x52, "PartySmallWindowUpdate"),
+    (0x53, "PledgeShowMemberListAll"),
+    (0x54, "PledgeShowMemberListUpdate"),
+    (0x55, "PledgeShowMemberListAdd"),
+    (0x56, "PledgeShowMemberListDelete"),
+    (0x58, "SkillList"),
+    (0x59, "VehicleInfo"),
+    (0x5a, "VehicleDeparture"),
+    (0x5c, "GetOnVehicle"),
+    (0x5d, "GetOffVehicle"),
+    (0x5e, "SendTradeRequest"),
+    (0x5f, "RestartResponse"),
+    (0x60, "MoveToPawn"),
+    (0x61, "ValidateLocation"),
+    (0x62, "StartRotating"),
+    (0x63, "FinishRotating"),
+    (0x64, "SystemMessage"),
+    (0x6c, "PledgeCrest"),
+    (0x6d, "SetupGauge"),
+    (0x6f, "ChooseInventoryItem"),
+    (0x71, "MoveToLocationInVehicle"),
+    (0x72, "StopMoveInVehicle"),
+    (0x73, "ValidateLocationInVehicle"),
+    (0x74, "TradeUpdate"),
+    (0x75, "TradePressOwnOk"),
+    (0x76, "MagicSkillLaunched"),
+    (0x77, "FriendAddRequestResult"),
+    (0x7c, "TradePressOtherOk"),
+    (0x7d, "FriendAddRequest"),
+    (0x7e, "LeaveWorld"),
+    (0x7f, "MagicEffectIcons"),
+    (0x80, "QuestList"),
+    (0x81, "EnchantResult"),
+    (0x82, "PledgeShowMemberListDeleteAll"),
+    (0x83, "PledgeInfo"),
+    (0x86, "Ride"),
+    (0x88, "PledgeShowInfoUpdate"),
+    (0x89, "ClientAction"),
+    (0x8a, "AcquireSkillList"),
+    (0x8b, "AcquireSkillInfo"),
+    (0x8c, "ServerObjectInfo"),
+    (0x8e, "AcquireSkillDone"),
+    (0x97, "PartyMatchDetail"),
+    (0x98, "PlaySound"),
+    (0x99, "StaticObject"),
+    (0x9a, "PrivateStoreManageListSell"),
+    (0x9b, "PrivateStoreListSell"),
+    (0x9c, "PrivateStoreMsgSell"),
+    (0x9e, "ReviveRequest"),
+    (0x9f, "AbnormalVisualEffect"),
+    (0xa0, "TutorialShowHtml"),
+    (0xa1, "TutorialShowQuestionMark"),
+    (0xa2, "TutorialEnableClientEvent"),
+    (0xa3, "TutorialCloseHtml"),
+    (0xa4, "ShowRadar"),
+    (0xa5, "DeleteRadar"),
+    (0xa6, "MyTargetSelected"),
+    (0xa7, "PartyMemberPosition"),
+    (0xa8, "AskJoinAlliance"),
+    (0xa9, "JoinAlliance"),
+    (0xaa, "WithdrawAlliance"),
+    (0xab, "OustAllianceMemberPledge"),
+    (0xac, "DismissAlliance"),
+    (0xae, "AllyCrest"),
+    (0xb0, "PetStatusShow"),
+    (0xb1, "PetInfo"),
+    (0xb2, "PetItemList"),
+    (0xb3, "PetInventoryUpdate"),
+    (0xb5, "PetStatusUpdate"),
+    (0xb6, "PetDelete"),
+    (0xb7, "PrivateStoreManageListBuy"),
+    (0xb8, "PrivateStoreListBuy"),
+    (0xb9, "PrivateStoreMsgBuy"),
+    (0xba, "VehicleStarted"),
+    (0xbb, "RequestTimeCheck"),
+    (0xbc, "StartAllianceWar"),
+    (0xbe, "StopAllianceWar"),
+    (0xc1, "SkillCoolTime"),
+    (0xc2, "PackageToList"),
+    (0xc3, "PackageSendableList"),
+    (0xc4, "Earthquake"),
+    (0xc5, "FlyToLocation"),
+    (0xc6, "BlockList"),
+    (0xc7, "SpecialCamera"),
+    (0xc8, "NormalCamera"),
+    (0xcc, "NicknameChanged"),
+    (0xcd, "PledgeStatusChanged"),
+    (0xce, "RelationChanged"),
+    (0xcf, "EventTrigger"),
+    (0xd0, "MultiSellList"),
+    (0xd1, "SetSummonRemainTime"),
+    (0xd2, "SkillRemainSec"),
+    (0xd3, "NetPing"),
+    (0xd4, "Dice"),
+    (0xd5, "Snoop"),
+    (0xd6, "RecipeBookItemList"),
+    (0xd7, "RecipeItemMakeInfo"),
+    (0xdb, "RecipeShopMsg"),
+    (0xdc, "ShowCalculator"),
+    (0xde, "ShowTownMap"),
+    (0xe0, "ObservationReturn"),
+    (0xe1, "ChairSit"),
+    (0xe3, "HennaItemInfo"),
+    (0xe4, "HennaInfo"),
+    (0xe6, "HennaUnequipInfo"),
+    (0xe7, "SendMacroList"),
+    (0xe8, "BuyListSeed"),
+    (0xeb, "RadarControl"),
+    (0xec, "ClientSetTime"),
+    (0xed, "ConfirmDlg"),
+    (0xee, "PartySpelled"),
+    (0xf0, "ShopPreviewInfo"),
+    (0xf1, "CameraMode"),
+    (0xf2, "ShowXMasSeal"),
+    (0xf3, "EtcStatusUpdate"),
+    (0xf4, "ShortBuffStatusUpdate"),
+    (0xf8, "SSQInfo"),
+    (0xf9, "GameGuardQuery"),
+    (0xfa, "FriendList"),
+    (0xfb, "L2Friend"),
+    (0xfc, "L2FriendStatus"),
+    (0xfd, "FriendRecvMsg"),
+    (0xfe, "Extended"),
+];
+
+pub fn server_opcode_name(opcode: u8) -> Option<&'static str> {
+    SERVER_NAMES.binary_search_by_key(&opcode, |(op, _)| *op).ok().map(|i| SERVER_NAMES[i].1)
+}
+
+pub fn describe_server_opcode(opcode: u8) -> String {
+    match server_opcode_name(opcode) {
+        Some(name) => format!("{name} ({opcode:#04x})"),
+        None => format!("{opcode:#04x}"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn names_follow_the_l2g_table() {
+        assert_eq!(server_opcode_name(0x29), Some("TargetSelected"));
+        assert_eq!(server_opcode_name(0x60), Some("MoveToPawn"));
+        assert_eq!(server_opcode_name(0xce), Some("RelationChanged"));
+        assert_eq!(server_opcode_name(0x53), Some("PledgeShowMemberListAll"));
+        assert_eq!(server_opcode_name(0xe4), Some("HennaInfo"));
+        assert_eq!(server_opcode_name(0xf8), Some("SSQInfo"));
+        assert_eq!(server_opcode_name(0xfa), Some("FriendList"));
+        assert_eq!(server_opcode_name(0xfe), Some("Extended"));
+        assert_eq!(server_opcode_name(0xd3), Some("NetPing"));
+        assert_eq!(server_opcode_name(0x8c), Some("ServerObjectInfo"));
+        assert_eq!(server_opcode_name(0x45), Some("ShortCutInit"));
+        assert_eq!(server_opcode_name(0x40), Some("MagicAndSkillList"));
+        assert_eq!(server_opcode_name(0x2c), Some("AutoAttackStop"));
+        assert_eq!(server_opcode_name(0x1b), Some("ItemList"));
+        assert_eq!(server_opcode_name(0x99), Some("StaticObject"));
+        assert_eq!(server_opcode_name(0xff), None);
+    }
+
+    #[test]
+    fn table_is_sorted_without_duplicates() {
+        for pair in SERVER_NAMES.windows(2) {
+            assert!(pair[0].0 < pair[1].0, "{:#04x} antes de {:#04x}", pair[0].0, pair[1].0);
+        }
+        assert_eq!(SERVER_NAMES.len(), 203);
+    }
+
+    #[test]
+    fn describe_falls_back_to_the_hex_opcode() {
+        assert_eq!(describe_server_opcode(0xe4), "HennaInfo (0xe4)");
+        assert_eq!(describe_server_opcode(0xff), "0xff");
+    }
+}

@@ -1,0 +1,9 @@
+[package]
+name = "ue2-package"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+license = "LicenseRef-Canastra-Source-1.0"
+
+[dependencies]
+ue2-core = { path = "../ue2-core" }

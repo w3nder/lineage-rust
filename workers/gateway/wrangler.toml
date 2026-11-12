@@ -1,0 +1,19 @@
+name = "lineage-rust-play"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+[assets]
+directory = "../../dist/web"
+binding = "ASSETS"
+run_worker_first = ["/gw/*", "/", "/index.html", "/auth-status"]
+
+[vars]
+LOGIN_TARGET = "login.example.com:2106"
+GAME_TARGET = "game.example.com:7777"
+ALLOWED_ORIGINS = "https://play.example.com"
+REQUIRE_LOGIN = "false"
+LOGIN_URL = "https://example.com/login"
+
+[[routes]]
+pattern = "play.example.com"
+custom_domain = true

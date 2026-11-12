@@ -1,0 +1,10 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>Desempenho do motor web</title><style>body{background:#11151b;color:#e3e6eb;font:16px system-ui;padding:32px}pre{white-space:pre-wrap;line-height:1.6}button{padding:12px}</style><h1>Desempenho do motor web</h1><p>Mesmo cálculo de matrizes, sete amostras por versão. Não mede o FPS do jogo.</p><button id="run">Comparar versões</button><pre id="result">Pronto.</pre><script type="module">
+const button=document.querySelector('#run'),result=document.querySelector('#result');
+button.onclick=()=>{
+ button.disabled=true;
+ const worker=new Worker('./performance-check-worker.js',{type:'module'});
+ worker.onmessage=({data})=>{result.textContent=data.text;if(data.done){button.disabled=false;worker.terminate();}};
+ worker.onerror=event=>{result.textContent=event.message;button.disabled=false;worker.terminate();};
+ worker.postMessage('run');
+};
+</script></html>

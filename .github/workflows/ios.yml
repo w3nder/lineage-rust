@@ -1,0 +1,30 @@
+name: ios
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [mobile/ios]
+
+jobs:
+  ipa:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rust
+        run: rustup target add aarch64-apple-ios
+      - uses: Swatinem/rust-cache@v2
+      - name: Pacote
+        env:
+          KILLER_CLIENT_URL: ${{ vars.KILLER_CLIENT_URL }}
+          KILLER_CLIENT_TOKEN: ${{ secrets.KILLER_CLIENT_TOKEN }}
+        run: sh scripts/ios_bundle.sh aarch64-apple-ios
+      - name: IPA
+        run: |
+          rm -rf target/ios/Payload
+          mkdir -p target/ios/Payload
+          cp -R target/ios/Killer.app target/ios/Payload/
+          (cd target/ios && zip -qry Killer.ipa Payload)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Killer-ipa
+          path: target/ios/Killer.ipa

@@ -1,0 +1,22 @@
+[package]
+name = "killer-cli"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+l2-net = { path = "../../crates/l2-net" }
+l2-crypto = { path = "../../crates/l2-crypto" }
+l2-dat = { path = "../../crates/l2-dat" }
+ue2-package = { path = "../../crates/ue2-package" }
+ue2-assets = { path = "../../crates/ue2-assets" }
+ue2-core = { path = "../../crates/ue2-core" }
+ue2-level = { path = "../../crates/ue2-level" }
+killer-assets = { path = "../../crates/killer-assets" }
+killer-render = { path = "../../crates/killer-render" }
+clap.workspace = true
+rpassword.workspace = true
+png.workspace = true
+glam.workspace = true
+serde_json = "1"

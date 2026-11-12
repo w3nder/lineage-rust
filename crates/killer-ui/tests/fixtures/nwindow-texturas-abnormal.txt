@@ -1,0 +1,11 @@
+L2UI_CH3.Etc.XLargeNumber
+L2UI_CH3.FrameCtrl.smallbar1
+L2UI_CH3.FrameCtrl.smallbar2
+L2UI_CH3.FrameCtrl.smallbar3
+L2UI_CH3.PlayerStatusWnd.debuff
+L2UI.EtcWndBack.AbnormalBack
+L2UI.NWindow.Number
+L2UI.tooltip.mini-tool01
+L2UI.Tooltip.Tool01
+L2UI.Tooltip.Tool02
+L2UI.Tooltip.Tool03

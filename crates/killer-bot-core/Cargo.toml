@@ -1,0 +1,15 @@
+[package]
+name = "killer-bot-core"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+killer-bot-script = { path = "../killer-bot-script" }
+killer-world = { path = "../killer-world" }
+killer-ui = { path = "../killer-ui" }
+l2-net = { path = "../l2-net" }
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+glam.workspace = true
